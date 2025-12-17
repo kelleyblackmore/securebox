@@ -1,0 +1,24 @@
+name: 'SecureBox Security Scanner'
+description: 'Run comprehensive security scans including secrets detection, SAST, dependency scanning, and IaC analysis'
+author: 'kelleyblackmore'
+
+branding:
+  icon: 'shield'
+  color: 'blue'
+
+inputs:
+  output-dir:
+    description: 'Directory to store scan reports'
+    required: false
+    default: 'security-reports'
+  
+outputs:
+  reports-path:
+    description: 'Path to the generated security reports'
+    value: ${{ steps.scan.outputs.reports-path }}
+
+runs:
+  using: 'docker'
+  image: 'docker://ghcr.io/kelleyblackmore/securebox:latest'
+  env:
+    OUT_DIR: ${{ inputs.output-dir }}

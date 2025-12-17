@@ -1,0 +1,48 @@
+name: Security Scan
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  security-scan:
+    runs-on: ubuntu-latest
+    name: Run Security Analysis
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Full history for better secret detection
+      
+      - name: Run SecureBox scan
+        uses: kelleyblackmore/securebox@main
+        with:
+          output-dir: security-reports
+      
+      - name: Upload security reports
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: security-reports
+          path: security-reports/
+          retention-days: 30
+      
+      - name: Check for critical findings
+        if: always()
+        run: |
+          # Check gitleaks for secrets
+          if [ -f security-reports/gitleaks.json ]; then
+            LEAKS=$(jq 'length' security-reports/gitleaks.json)
+            if [ "$LEAKS" -gt 0 ]; then
+              echo "::error::Found $LEAKS potential secrets!"
+              exit 1
+            fi
+          fi

@@ -1,64 +1,118 @@
-# Container Template
+# SecureBox 🔒
 
-A repository template for building and pushing container images to GitHub Container Registry (ghcr.io).
+A comprehensive security scanning toolkit packaged as a Docker container and reusable GitHub Action.
 
 ## Features
 
-- GitHub Actions workflow for automated container builds
-- Multi-architecture support via Docker Buildx
-- Automatic tagging based on git refs (branches, tags, PRs)
-- GitHub Container Registry (ghcr.io) integration
-- Build caching for faster builds
+- **Secrets Detection**: GitLeaks for credential scanning
+- **SAST**: Semgrep for static code analysis
+- **Dependency Scanning**: OSV Scanner and Trivy for vulnerability detection
+- **SBOM Generation**: Syft for software bill of materials
+- **IaC Security**: Checkov for infrastructure-as-code analysis
+- **Go Security**: Gosec and govulncheck for Go-specific analysis
+- **Reusable GitHub Action**: Easy integration into any repository
+- **JSON Reports**: Standardized output for CI/CD pipelines
 
-## Quick Start
+## Usage
 
-1. **Use this template**: Click "Use this template" to create a new repository based on this template.
+### As a GitHub Action
 
-2. **Customize the Dockerfile**: Modify the `Dockerfile` to build your application.
+Add this to your workflow file (e.g., `.github/workflows/security.yml`):
 
-3. **Push to build**: Push to the `main` branch or create a tag to trigger a build and push to ghcr.io.
+```yaml
+name: Security Scan
 
-## Workflow Triggers
+on: [push, pull_request]
 
-The workflow runs on:
-- Push to `main` branch
-- Tags matching `v*` pattern (e.g., `v1.0.0`)
-- Pull requests to `main` branch (builds but does not push)
-- Manual dispatch via GitHub Actions UI
+permissions:
+  contents: read
 
-## Image Tags
-
-The workflow automatically generates the following tags:
-- Branch name (e.g., `main`)
-- Pull request number (e.g., `pr-123`)
-- Semantic version from git tag (e.g., `1.0.0`, `1.0`)
-- Git SHA (e.g., `sha-a1b2c3d`)
-
-## Pulling Your Image
-
-Once built, you can pull your image using:
-
-```bash
-docker pull ghcr.io/OWNER/REPO:TAG
+jobs:
+  security:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Run SecureBox
+        uses: kelleyblackmore/securebox@main
+        with:
+          output-dir: security-reports
+      
+      - name: Upload reports
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: security-reports
+          path: security-reports/
 ```
 
-Replace `OWNER` with your GitHub username or organization, `REPO` with your repository name, and `TAG` with the desired tag.
+The action uses a pre-built Docker image from GitHub Container Registry for fast execution.
 
-## Configuration
+### As a Docker Container
 
-### Required Permissions
+```bash
+# Build the image
+docker build -t securebox:0.0.1 .
 
-The workflow requires the following permissions (already configured):
-- `contents: read` - To checkout the repository
-- `packages: write` - To push to GitHub Container Registry
+# Run scan on current directory
+docker run --rm -v "$PWD:/work" securebox:0.0.1
 
-### Making Your Package Public
+# Custom output directory
+docker run --rm -v "$PWD:/work" -e OUT_DIR=my-reports securebox:0.0.1
+```
 
-By default, container images are private. To make them public:
-1. Go to your repository's "Packages" section
-2. Select your container image
-3. Go to "Package settings"
-4. Change visibility to "Public"
+### Local Script Usage
+
+```bash
+# Make script executable
+chmod +x scripts/security-scan
+
+# Run directly (requires all tools installed)
+./scripts/security-scan
+```
+
+## Output Reports
+
+All scans generate JSON reports in the output directory (default: `reports/`):
+
+- `meta.json` - Scan metadata and timestamp
+- `gitleaks.json` - Detected secrets and credentials
+- `semgrep.json` - SAST findings
+- `gosec.json` - Go security issues (if Go detected)
+- `govulncheck.json` - Go vulnerability analysis (if Go detected)
+- `osv.json` - Dependency vulnerabilities (if lockfile found)
+- `checkov.json` - IaC security issues (if IaC files detected)
+
+## Requirements
+
+- Docker (for containerized usage)
+- Git repository (recommended for full scanning)
+
+## Tools Included
+
+| Tool | Purpose | Version |
+|------|---------|---------|
+| [GitLeaks](https://github.com/gitleaks/gitleaks) | Secret detection | Latest |
+| [Trivy](https://github.com/aquasecurity/trivy) | Vulnerability scanner | Latest |
+| [Syft](https://github.com/anchore/syft) | SBOM generation | Latest |
+| [Semgrep](https://semgrep.dev/) | SAST analysis | Latest |
+| [OSV Scanner](https://github.com/google/osv-scanner) | Dependency scanning | Latest |
+| [Checkov](https://www.checkov.io/) | IaC security | Latest |
+| [Gosec](https://github.com/securego/gosec) | Go security | Latest |
+| [Govulncheck](https://pkg.go.dev/golang.org/x/vuln/cmd/govulncheck) | Go vulnerabilities | Latest |
+
+## Example Workflow
+
+See [.github/workflows/example-usage.yml](.github/workflows/example-usage.yml) for a complete example that includes:
+- Running the scan on push and pull requests
+- Uploading reports as artifacts
+- Failing the build if secrets are detected
+
+## Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
 
 ## License
 

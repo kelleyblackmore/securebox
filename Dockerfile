@@ -1,24 +1,34 @@
-# Sample Dockerfile for building a container image
-# Customize this file based on your application needs
+FROM ubuntu:24.04
 
-FROM alpine:3.19
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ca-certificates curl git python3 python3-pip jq unzip openjdk-17-jre-headless \
+  && rm -rf /var/lib/apt/lists/*
 
-# Add labels for container metadata
-# Replace OWNER/REPO with your GitHub username/organization and repository name
-LABEL org.opencontainers.image.source="https://github.com/OWNER/REPO"
-LABEL org.opencontainers.image.description="Container image built from template"
-LABEL org.opencontainers.image.licenses="MIT"
+# gitleaks
+RUN curl -sSfL https://raw.githubusercontent.com/gitleaks/gitleaks/master/install.sh | bash
 
-# Set working directory
-WORKDIR /app
+# trivy
+RUN curl -sSfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin
 
-# Copy application files
-# COPY . .
+# syft
+RUN curl -sSfL https://raw.githubusercontent.com/anchore/syft/main/install.sh | sh -s -- -b /usr/local/bin
 
-# Install any required packages (uncomment and customize as needed)
-# RUN apk add --no-cache \
-#     bash \
-#     curl
+# semgrep
+RUN pip3 install --no-cache-dir --break-system-packages semgrep
 
-# Set the entrypoint
-CMD ["echo", "Hello from container-template!"]
+# osv-scanner
+RUN curl -sSfL https://github.com/google/osv-scanner/releases/latest/download/osv-scanner_linux_amd64 \
+  -o /usr/local/bin/osv-scanner && chmod +x /usr/local/bin/osv-scanner
+
+# checkov
+RUN pip3 install --no-cache-dir --break-system-packages checkov
+
+# go tools (optional: only needed if scanning Go repos)
+RUN curl -sSfL https://go.dev/dl/go1.22.0.linux-amd64.tar.gz | tar -xz -C /usr/local
+ENV PATH="/usr/local/go/bin:${PATH}"
+RUN go install github.com/securego/gosec/v2/cmd/gosec@latest \
+ && go install golang.org/x/vuln/cmd/govulncheck@latest
+
+WORKDIR /work
+COPY scripts/ /usr/local/bin/
+ENTRYPOINT ["security-scan"]
