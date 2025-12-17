@@ -1,4 +1,4 @@
-# SecureBox 🔒
+# SecureBox
 
 A comprehensive security scanning toolkit packaged as a Docker container and reusable GitHub Action.
 
@@ -80,6 +80,9 @@ All scans generate JSON reports in the output directory (default: `reports/`):
 - `meta.json` - Scan metadata and timestamp
 - `gitleaks.json` - Detected secrets and credentials
 - `semgrep.json` - SAST findings
+- `sbom.json` - Software Bill of Materials (JSON format)
+- `sbom-spdx.json` - SBOM in SPDX format
+- `trivy-fs.json` - Filesystem vulnerability scan results
 - `gosec.json` - Go security issues (if Go detected)
 - `govulncheck.json` - Go vulnerability analysis (if Go detected)
 - `osv.json` - Dependency vulnerabilities (if lockfile found)

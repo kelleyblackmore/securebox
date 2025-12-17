@@ -1,0 +1,8 @@
+# Security scan reports - generated at runtime
+reports/
+security-reports/
+
+# Docker build artifacts
+*.tar.gz
+checksums.txt
+expected_checksum.txt
